@@ -4,13 +4,13 @@ Code to interpret equations of form
 "Ax + By + Cz + ... = const"
 
 '''
-from tempfile import tempdir
-import numpy as np
+import copy
+import functools
+import math
 import re
 
 
 class diophantineEquation():
-
     def __init__(self, equation: str):
         """
         Create a diophantineEquation from a string represenation.
@@ -19,7 +19,6 @@ class diophantineEquation():
         d_dict = {}
         for i in range(len(tmp)):
             terms = re.findall(r"([-+]|^)(\s*\d*\w)", tmp[i])
-            print(f"{i}: {terms}")
             for e in terms:
                 var = re.findall("[a-zA-Z]", e[1])[0] if re.search("[a-zA-Z]", e[1]) else 0
                 val = int(re.findall("\d+", e[1])[0]) if re.search("\d+", e[1]) else 1
@@ -27,6 +26,7 @@ class diophantineEquation():
                 val = -val if i == 1 else val                                       # invert value if on right hand side
                 d_dict[var] = (d_dict[var] + val) if (var in d_dict) else val       # add to existing value or intitialize
         self.eq = dict(d_dict)
+        self.simplify()
 
     def evaluate(self, values):
         """
@@ -46,13 +46,65 @@ class diophantineEquation():
             if val > 0:
                 tmp += "+"
             if isinstance(key, str):
-                tmp += str(val) + key
-        tmp += "=" + str(self.eq[0])
+                tmp += str(val) + key if val != 1 else key
+        tmp += "=" + str(-self.eq[0])
         if tmp[0] =="+": tmp = tmp[1:]
         return tmp
 
-    def reduce(self):
+    def reduced(self):
+        """
+        Returns the latent diophantine equation.
+        """
+        prod = copy.deepcopy(self)
+        searchable_subset = [(key, abs(val)) for key, val in prod.eq.items() if isinstance(key, str)]
+        min_key, min_abs_val = min(searchable_subset, key=lambda x: x[1])
+        if min_abs_val == 1: return None        # Exit
+        # get underlying equation
+        for key, value in prod.eq.items():
+            if key != min_key:
+                prod.eq[key] =  -(value % min_abs_val) if value < 0 else value % min_abs_val
+        prod.simplify()
+        return prod
 
-        return
-            
-a = diophantineEquation("3x - 2y = 3")
+    def simplify(self):
+        """
+        Simplifies the equation by removing any common factors.
+        """
+        fc = self.find_gcd([val for key, val in self.eq.items()])
+        for key, value in self.eq.items():
+            self.eq[key] = int(value / fc)
+
+    def find_gcd(self, list):
+        """
+        Helper method for simplify
+        """
+        x = functools.reduce(math.gcd, list)
+        return x
+
+    def reduce_unknowns(self, information):
+        """
+        Returns a new equation by performing known calculations.
+        """
+        new_eq = copy.deepcopy(self)
+        sliding_vars = set(self.eq.keys()) - set(information.keys())
+        ct = 0
+        for var, val in information.items():
+            try: ct += val * self.eq[var]
+            except KeyError: pass
+        ct += self.eq[0]
+        new_eq.eq = dict([(key, self.eq[key]) for key in sliding_vars] + [(0, ct)])
+        new_eq.simplify()
+        return new_eq
+
+
+
+
+# n = diophantineEquation("147x - 258y= 369")
+# while n:
+#     print(n)
+#     n = n.reduce()
+
+n = diophantineEquation("3x+2y=7")
+
+print(n.eq)
+print(n.reduce_unknowns({'y': 1}))
