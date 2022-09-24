@@ -5,6 +5,7 @@ Code to interpret equations of form
 
 '''
 import copy
+from decimal import Decimal
 import functools
 import math
 import re
@@ -43,10 +44,10 @@ class diophantineEquation():
     def __str__(self) -> str:
         tmp = ""
         for key, val in self.eq.items():
+            if key == 0: continue
             if val > 0:
                 tmp += "+"
-            if isinstance(key, str):
-                tmp += str(val) + key if val != 1 else key
+            tmp += str(val) + key if val != 1 else key
         tmp += "=" + str(-self.eq[0])
         if tmp[0] =="+": tmp = tmp[1:]
         return tmp
@@ -81,9 +82,12 @@ class diophantineEquation():
         x = functools.reduce(math.gcd, list)
         return x
 
+
     def reduce_unknowns(self, information):
         """
-        Returns a new equation by performing known calculations.
+        Return a new equation by performing known calculations.
+
+        `information` is a dict with variables' values.
         """
         new_eq = copy.deepcopy(self)
         sliding_vars = set(self.eq.keys()) - set(information.keys())
@@ -104,7 +108,21 @@ class diophantineEquation():
 #     print(n)
 #     n = n.reduce()
 
-n = diophantineEquation("3x+2y=7")
+obj = diophantineEquation("3x+2y=15")
 
-print(n.eq)
-print(n.reduce_unknowns({'y': 1}))
+n = 0
+x_val = 10000
+sols = []
+
+while x_val > 0:
+    a = obj.reduce_unknowns({'y': n})
+    print(a.eq)
+    print(a)
+    if a.eq[0] % a.eq['x'] == 0:
+        x_val = int(-a.eq[0] / a.eq['x'])
+        sols.append((n, x_val))
+    else:
+        print('no integer solution')
+    print("-")
+    n += 1
+print(sols)
