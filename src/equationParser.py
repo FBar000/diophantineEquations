@@ -108,21 +108,18 @@ class diophantineEquation():
 #     print(n)
 #     n = n.reduce()
 
-obj = diophantineEquation("3x+2y=15")
+obj = diophantineEquation("369x+258y=369")
 
 n = 0
-x_val = 10000
+y_val = 0
 sols = []
 
-while x_val > 0:
-    a = obj.reduce_unknowns({'y': n})
-    print(a.eq)
-    print(a)
-    if a.eq[0] % a.eq['x'] == 0:
-        x_val = int(-a.eq[0] / a.eq['x'])
-        sols.append((n, x_val))
-    else:
-        print('no integer solution')
-    print("-")
+while True:
+    a = obj.reduce_unknowns({'x': n})
+    if -a.eq[0] < 0:        # This would make x_val negative
+        break
+    if a.eq[0] % a.eq['y'] == 0:
+        y_val = int(-a.eq[0] / a.eq['y'])
+        sols.append((n, y_val))
     n += 1
 print(sols)
